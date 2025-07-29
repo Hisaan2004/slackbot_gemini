@@ -304,7 +304,7 @@ export async function POST(request) {
 }
 */
 // File: pages/api/slack/webhook.js
-
+/*
 import { WebClient } from "@slack/web-api";
 import dotenv from "dotenv";
 import { handleUserQuestion } from "@/app/api/chatbot/route.js"; // Or wherever you defined it
@@ -345,5 +345,73 @@ export default async function handler(req, res) {
     console.error("Slack event error:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
+}*/
+import axios from "axios";
+import dotenv from "dotenv";
+import { handleUserQuestion } from "../../app/api/chatbot/route.js";
+
+dotenv.config();
+
+const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
+const processedEvents = new Set();
+
+export const config = {
+  api: {
+    bodyParser: true,
+  },
+};
+
+export async function POST(req) {
+  const body = await req.json();
+  const { type, event, challenge, event_id } = body;
+
+  // 🔄 Slack's URL verification
+  if (type === "url_verification") {
+    return new Response(challenge, { status: 200 });
+  }
+
+  // ✅ Acknowledge immediately
+  const response = new Response(null, { status: 200 });
+
+  // ✅ Avoid duplicate event processing
+  if (processedEvents.has(event_id)) {
+    console.log("Duplicate event ignored:", event_id);
+    return response;
+  }
+  processedEvents.add(event_id);
+
+  if (event && event.type === "message" && !event.bot_id) {
+    const userMessage = event.text;
+    const channelId = event.channel;
+
+    console.log("User message:", userMessage);
+    console.log("Channel:", channelId);
+
+    try {
+      const reply = await handleUserQuestion(userMessage);
+
+      await axios.post(
+        "https://slack.com/api/chat.postMessage",
+        {
+          channel: channelId,
+          text: reply,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${SLACK_BOT_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error sending message to Slack:", error.message);
+    }
+  }
+
+  return response;
+}
+
+export async function GET() {
+  return new Response("Slack bot is running!", { status: 200 });
 }
 
