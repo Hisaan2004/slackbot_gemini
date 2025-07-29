@@ -355,7 +355,7 @@ export default async function handler(req, res) {
       text: "Sorry, something went wrong while answering your question.",
     });
   }
-}*//*
+}*/
 import dotenv from "dotenv";
 import { WebClient } from "@slack/web-api";
 import { handleUserQuestion } from "@/app/api/chatbot/route.js";
@@ -416,67 +416,4 @@ export default async function handler(req, res) {
     res.status(405).send("Method Not Allowed");
   }
 }
-
-*/
-import dotenv from "dotenv";
-import { WebClient } from "@slack/web-api";
-import { handleUserQuestion } from "@/app/api/chatbot/route.js";
-
-dotenv.config();
-
-const slackClient = new WebClient(process.env.SLACK_BOT_TOKEN);
-const processedEvents = new Set();
-
-export const config = {
-  api: {
-    bodyParser: true,
-  },
-};
-
-export default async function handler(req, res) {
-  if (req.method === "GET") {
-    return res.status(200).send("Slack bot is running");
-  }
-
-  if (req.method !== "POST") {
-    return res.status(405).send("Method Not Allowed");
-  }
-
-  const { type, event, challenge, event_id } = req.body;
-
-  if (type === "url_verification") {
-    return res.status(200).send(challenge);
-  }
-
-  if (!event || event.type !== "message" || event.bot_id) {
-    return res.status(200).end(); // Skip bot/self messages
-  }
-
-  if (processedEvents.has(event_id)) {
-    console.log("Duplicate event ignored:", event_id);
-    return res.status(200).end();
-  }
-  processedEvents.add(event_id);
-
-  // Acknowledge the event first
-  res.status(200).end();
-
-  try {
-    const userMessage = event.text;
-    const channelId = event.channel;
-    const reply = await handleUserQuestion(userMessage);
-
-    await slackClient.chat.postMessage({
-      channel: channelId,
-      text: reply || "I'm not sure how to respond to that.",
-    });
-  } catch (err) {
-    console.error("Slack response error:", err.message);
-    await slackClient.chat.postMessage({
-      channel: event.channel,
-      text: "Sorry, something went wrong.",
-    });
-  }
-}
-
 
