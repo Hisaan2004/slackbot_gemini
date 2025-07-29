@@ -219,7 +219,7 @@ export async function POST(request) {
     });
   }
 }
-*/
+*//*
 import { handleUserQuestion } from "@/app/api/chatbot/route.js";
 import { WebClient } from "@slack/web-api";
 import dotenv from "dotenv";
@@ -300,6 +300,50 @@ export async function POST(request) {
     return new Response(JSON.stringify({ error: "Internal Server Error" }), {
       status: 200, // Return 200 to avoid Slack retry loop
     });
+  }
+}
+*/
+// File: pages/api/slack/webhook.js
+
+import { WebClient } from "@slack/web-api";
+import dotenv from "dotenv";
+import { handleUserQuestion } from "@/app/api/chatbot/route.js"; // Or wherever you defined it
+
+dotenv.config();
+
+const slackClient = new WebClient(process.env.SLACK_BOT_TOKEN);
+
+// ✅ Your main handler function
+export default async function handler(req, res) {
+  // ✅ Respond only to POST
+  if (req.method !== "POST") {
+    return res.status(405).json({ message: "Method Not Allowed" });
+  }
+
+  try {
+    const event = req.body.event;
+
+    // ✅ Handle only message events (e.g., user messages in Slack)
+    if (event && event.type === "message" && !event.bot_id) {
+      const userQuestion = event.text;
+      const channel = event.channel;
+
+      // ✅ Call your logic (e.g., Gemini)
+      const answer = await handleUserQuestion(userQuestion);
+
+      // ✅ Send back to Slack
+      await slackClient.chat.postMessage({
+        channel,
+        text: answer,
+      });
+    }
+
+    // ✅ Respond success to Slack (required, even if no message sent)
+    return res.status(200).json({ message: "Processed Slack event" });
+
+  } catch (error) {
+    console.error("Slack event error:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 }
 
