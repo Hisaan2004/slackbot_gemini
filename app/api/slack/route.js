@@ -355,7 +355,7 @@ export default async function handler(req, res) {
       text: "Sorry, something went wrong while answering your question.",
     });
   }
-}*/import { WebClient } from "@slack/web-api";
+}*//*import { WebClient } from "@slack/web-api";
 import dotenv from "dotenv";
 import { handleUserQuestion } from "@/app/api/chatbot/route.js"; // or adjust path
 
@@ -416,5 +416,78 @@ export async function GET() {
   return new Response("Slack bot is running!", { status: 200 });
 }
 
+*/
+import axios from "axios";
+import dotenv from "dotenv";
+import { handleUserQuestion } from "../../app/api/chatbot/route.js";
+
+dotenv.config();
+
+const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
+const processedEvents = new Set();
+
+export const config = {
+  api: {
+    bodyParser: true,
+  },
+};
+
+export async function POST(req) {
+  const body = await req.json();
+  const { type, event, challenge, event_id } = body;
+
+  // ✅ URL verification for Slack Events API
+  if (type === "url_verification") {
+    return new Response(challenge, { status: 200 });
+  }
+
+  // ✅ Always ACK the request FIRST to avoid retries
+  const ackResponse = new Response(null, { status: 200 });
+
+  // 🔁 Prevent duplicate event processing
+  if (processedEvents.has(event_id)) {
+    console.log("Duplicate event ignored:", event_id);
+    return ackResponse;
+  }
+
+  processedEvents.add(event_id);
+
+  // ✅ Handle user messages (ignore bot replies)
+  if (event && event.type === "message" && !event.bot_id) {
+    const userMessage = event.text;
+    const channelId = event.channel;
+
+    console.log("Received:", userMessage);
+
+    // 🔄 Process message asynchronously (outside of main response)
+    (async () => {
+      try {
+        const reply = await handleUserQuestion(userMessage);
+
+        await axios.post(
+          "https://slack.com/api/chat.postMessage",
+          {
+            channel: channelId,
+            text: reply || "Sorry, I couldn't generate a response.",
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${SLACK_BOT_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      } catch (error) {
+        console.error("❌ Error responding to Slack:", error.message);
+      }
+    })();
+  }
+
+  return ackResponse;
+}
+
+export async function GET() {
+  return new Response("Slack bot is running!", { status: 200 });
+}
 
 
