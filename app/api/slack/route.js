@@ -302,9 +302,7 @@ export async function POST(request) {
     });
   }
 }*/
-// File: pages/api/slack/webhook.js
-// 
-/*
+// File: pages/api/slack/webhook.js/*
 import dotenv from "dotenv";
 import { WebClient } from "@slack/web-api";
 import { handleUserQuestion } from "@/app/api/chatbot/route.js"; // adjust as needed
@@ -355,65 +353,6 @@ export default async function handler(req, res) {
       text: "Sorry, something went wrong while answering your question.",
     });
   }
-}*/
-import dotenv from "dotenv";
-import { WebClient } from "@slack/web-api";
-import { handleUserQuestion } from "@/app/api/chatbot/route.js";
-
-dotenv.config();
-
-const slackClient = new WebClient(process.env.SLACK_BOT_TOKEN);
-const processedEvents = new Set();
-
-export const config = {
-  api: {
-    bodyParser: true,
-  },
-};
-
-export default async function handler(req, res) {
-  if (req.method === "POST") {
-    const { type, event, challenge, event_id } = req.body;
-
-    // ✅ Slack URL verification
-    if (type === "url_verification") {
-      return res.status(200).send(challenge);
-    }
-
-    // ✅ Ignore events without actual message
-    if (!event || !event.type || event.type !== "message" || event.bot_id) {
-      return res.status(200).end(); // Acknowledge empty or bot message
-    }
-
-    // ✅ Prevent duplicate event processing
-    if (processedEvents.has(event_id)) {
-      console.log("Duplicate event ignored:", event_id);
-      return res.status(200).end();
-    }
-    processedEvents.add(event_id);
-
-    // ✅ Acknowledge right away to prevent retries
-    res.status(200).end();
-
-    try {
-      const userMessage = event.text;
-      const channelId = event.channel;
-
-      const reply = await handleUserQuestion(userMessage);
-
-      await slackClient.chat.postMessage({
-        channel: channelId,
-        text: reply || "I'm not sure how to respond to that.",
-      });
-    } catch (err) {
-      console.error("Error replying to Slack:", err.message);
-      await slackClient.chat.postMessage({
-        channel: event.channel,
-        text: "Sorry, something went wrong while answering your question.",
-      });
-    }
-  } else {
-    res.status(405).send("Method Not Allowed");
-  }
 }
+
 
