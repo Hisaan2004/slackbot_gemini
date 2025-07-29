@@ -219,7 +219,7 @@ export async function POST(request) {
     });
   }
 }
-*//*
+*/
 import { handleUserQuestion } from "@/app/api/chatbot/route.js";
 import { WebClient } from "@slack/web-api";
 import dotenv from "dotenv";
@@ -301,58 +301,5 @@ export async function POST(request) {
       status: 200, // Return 200 to avoid Slack retry loop
     });
   }
-}*/
-// File: pages/api/slack/webhook.js/*
-import dotenv from "dotenv";
-import { WebClient } from "@slack/web-api";
-import { handleUserQuestion } from "@/app/api/chatbot/route.js"; // adjust as needed
-
-dotenv.config();
-
-const slackClient = new WebClient(process.env.SLACK_BOT_TOKEN);
-const processedEvents = new Set();
-
-export default async function handler(req, res) {
-  // ✅ Handle Slack URL verification
-  if (req.method === "POST" && req.body.type === "url_verification") {
-    return res.status(200).send(req.body.challenge);
-  }
-
-  // ✅ Only respond to events
-  if (req.method !== "POST" || !req.body.event) {
-    return res.status(400).json({ error: "Invalid request" });
-  }
-
-  const { event } = req.body;
-
-  // ✅ Prevent duplicate processing
-  if (processedEvents.has(event.event_ts)) {
-    return res.status(200).end();
-  }
-  processedEvents.add(event.event_ts);
-
-  // ✅ Acknowledge to Slack immediately
-  res.status(200).end();
-
-  try {
-    const userMessage = event.text;
-    const channelId = event.channel;
-
-    // ❌ Do not send a message inside handleUserQuestion
-    const botReply = await handleUserQuestion(userMessage);
-
-    await slackClient.chat.postMessage({
-      channel: channelId,
-      text: botReply || "I'm not sure how to respond to that.",
-    });
-  } catch (err) {
-    console.error("Error processing Slack event:", err.message);
-
-    await slackClient.chat.postMessage({
-      channel: event.channel,
-      text: "Sorry, something went wrong while answering your question.",
-    });
-  }
 }
-
 
