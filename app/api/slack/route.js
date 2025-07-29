@@ -9,8 +9,16 @@ dotenv.config();
 const slackClient = new WebClient(process.env.SLACK_BOT_TOKEN);
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
+  /*if (req.method !== "POST") {
     return res.status(405).json({ message: "Only POST allowed" });
+  }*/
+ if (req.method !== "POST") {
+    return res.status(405).json({ message: "Only POST allowed" });
+  }
+
+  // ⚠️ Handle Slack URL verification first
+  if (req.body.type === "url_verification") {
+    return res.status(200).json({ challenge: req.body.challenge });
   }
 
   const { event } = req.body;
