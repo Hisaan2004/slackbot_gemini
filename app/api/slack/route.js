@@ -348,7 +348,7 @@ export default async function handler(req, res) {
 }*/
 import axios from "axios";
 import dotenv from "dotenv";
-import { handleUserQuestion } from "../../app/api/chatbot/route.js";
+import { handleUserQuestion } from "@/app/api/chatbot/route.js";
 
 dotenv.config();
 
