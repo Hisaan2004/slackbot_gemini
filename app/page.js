@@ -1,4 +1,5 @@
-import Image from "next/image";
+'use client';
+/*import Image from "next/image";
 import styles from "./page.module.css";
 
 export default function Home() {
@@ -90,6 +91,110 @@ export default function Home() {
           Go to nextjs.org →
         </a>
       </footer>
+    </div>
+  );
+}
+*//*
+import { connectToDB } from '../../app/service/mongodb/index.js';
+import { CONFIG } from "../../config/index.js";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import dotenv from "dotenv";
+dotenv.config();
+
+import { index } from '../../app/service/pinecone/index.js';
+
+// Access your API key as an environment variable (see "Set up your API key" below)
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+async function getEmbeddings(text) {
+  try {
+    const model = genAI.getGenerativeModel({ model: "embedding-001"});
+    const result = await model.embedContent(text);
+    const embedding = result.embedding;
+    return embedding.values;
+  } catch (err) {
+    console.error("Embedding error:", err);
+    return null; // Return null to indicate failure
+  }
+}
+
+async function processData() {
+  try {
+    const db = await connectToDB();
+    const collection = db.collection(CONFIG.QA_COLLECTION_NAME);
+
+    const documents = await collection.find({}).toArray();
+    console.log(` Fetched ${documents.length} documents from MongoDB`);
+
+    for (const doc of documents) {
+      const url = doc.url;
+      const qas = doc.qa || [];
+
+      for (let i = 0; i < qas.length; i++) {
+        console.log(` Processing Q/A for URL: ${url}\n`);
+
+        const qaText = `Q: ${qas[i].question}\nA: ${qas[i].answer}`;
+        const embedding = await getEmbeddings(qaText);
+
+        if (!embedding) {
+          console.warn(" Skipping due to embedding failure.");
+          continue;
+        }
+
+        await index.upsert([
+          {
+            id: `${doc._id}_${i}`,
+            values: embedding,
+            metadata: {
+              url,
+              question: qas[i].question,
+              answer: qas[i].answer,
+            },
+          },
+        ]);
+
+        console.log(` Upserted: ${qas[i].question}`);
+      }
+    }
+
+    console.log(" All documents processed.");
+  } catch (err) {
+    console.error(" Error in processData:", err.message);
+  }
+}
+
+processData();*/
+"use client"; // if you're using App Router
+import { useState } from "react";
+
+export default function Home() {
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/embedding", {
+        method: "POST", // use POST if processing data
+      });
+
+      const data = await res.json();
+      console.log("Response:", data);
+    } catch (err) {
+      console.error("API call failed:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <button
+        className="text-black bg-white rounded p-2"
+        onClick={handleClick}
+        disabled={loading}
+      >
+        {loading ? "Processing..." : "Click Me"}
+      </button>
     </div>
   );
 }
