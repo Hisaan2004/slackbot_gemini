@@ -53,7 +53,7 @@ export default async function handler(req, res) {
   }
 }*/
 // File: pages/api/slack/webhook.js
-
+/*
 import { handleUserQuestion } from "@/app/api/chatbot/route.js"; // Gemini + search logic
 import { WebClient } from "@slack/web-api";
 import dotenv from "dotenv";
@@ -101,4 +101,54 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Something went wrong" });
   }
 }
+*/
 
+import { handleUserQuestion } from "@/app/api/chatbot/route.js";
+import { WebClient } from "@slack/web-api";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const slackClient = new WebClient(process.env.SLACK_BOT_TOKEN);
+
+export async function POST(request) {
+  try {
+    const body = await request.json();
+
+    // ✅ Slack URL verification
+    if (body.type === "url_verification") {
+      return new Response(JSON.stringify({ challenge: body.challenge }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const { event } = body;
+
+    // 🛑 Ignore bot messages
+    if (event?.subtype === "bot_message") {
+      return new Response("Ignored bot message", { status: 200 });
+    }
+
+    const userMessage = event.text;
+    const channel = event.channel;
+
+    // 🤖 Generate response
+    const botReply = await handleUserQuestion(userMessage);
+
+    // 📣 Send message back to Slack
+    await slackClient.chat.postMessage({
+      channel,
+      text: botReply,
+    });
+
+    return new Response(JSON.stringify({ status: "Message processed" }), {
+      status: 200,
+    });
+  } catch (error) {
+    console.error("Slack webhook error:", error);
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), {
+      status: 500,
+    });
+  }
+}
