@@ -1,6 +1,6 @@
 // File: pages/api/slack/webhook.js
 
-import { handleUserQuestion } from "@/app/chat/handleUserQuestion"; // this contains search + Gemini
+import { handleUserQuestion } from "@/app/api/chatbot/route.js"; // this contains search + Gemini
 import { WebClient } from "@slack/web-api";
 import dotenv from "dotenv";
 
