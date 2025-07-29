@@ -149,10 +149,11 @@ export async function POST(request) {
     console.error("Slack webhook error:", error);
     return new Response(JSON.stringify({ error: "Internal Server Error" }), {
       status: 500,
-    });
+    });//this one was working fine but infinte loop
   }
 }
 */
+/*
 import { handleUserQuestion } from "@/app/api/chatbot/route.js";
 import { WebClient } from "@slack/web-api";
 import dotenv from "dotenv";
@@ -218,3 +219,87 @@ export async function POST(request) {
     });
   }
 }
+*/
+import { handleUserQuestion } from "@/app/api/chatbot/route.js";
+import { WebClient } from "@slack/web-api";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const slackClient = new WebClient(process.env.SLACK_BOT_TOKEN);
+
+// Only fetch once
+let botUserId = null;
+async function getBotUserId() {
+  if (!botUserId) {
+    const auth = await slackClient.auth.test();
+    botUserId = auth.user_id;
+  }
+  return botUserId;
+}
+
+export async function POST(request) {
+  try {
+    const body = await request.json();
+
+    // ✅ Slack URL verification
+    if (body.type === "url_verification") {
+      return new Response(JSON.stringify({ challenge: body.challenge }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const { event } = body;
+
+    // ⛔ Ignore if event is missing
+    if (!event) {
+      return new Response("No event found", { status: 200 });
+    }
+
+    // ⛔ Ignore bot messages
+    if (event.subtype === "bot_message") {
+      return new Response("Ignored bot message", { status: 200 });
+    }
+
+    // ⛔ Ignore self messages (from bot)
+    const botId = await getBotUserId();
+    if (event.user === botId) {
+      return new Response("Ignored self message", { status: 200 });
+    }
+
+    const userMessage = event.text;
+    const channel = event.channel;
+
+    let botReply;
+
+    try {
+      // 🤖 Generate response
+      botReply = await handleUserQuestion(userMessage);
+
+      // Fallback if botReply is undefined/null
+      if (!botReply) {
+        botReply = "I didn't understand that. Try asking differently.";
+      }
+    } catch (err) {
+      console.error("Error in handleUserQuestion:", err);
+      botReply = "Sorry, something went wrong while answering your question.";
+    }
+
+    // 📣 Send message back to Slack
+    await slackClient.chat.postMessage({
+      channel,
+      text: botReply,
+    });
+
+    return new Response(JSON.stringify({ status: "Message processed" }), {
+      status: 200,
+    });
+  } catch (error) {
+    console.error("Slack webhook error:", error);
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), {
+      status: 200, // Return 200 to avoid Slack retry loop
+    });
+  }
+}
+
