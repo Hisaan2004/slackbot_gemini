@@ -102,7 +102,7 @@ export default async function handler(req, res) {
   }
 }
 */
-
+/*
 import { handleUserQuestion } from "@/app/api/chatbot/route.js";
 import { WebClient } from "@slack/web-api";
 import dotenv from "dotenv";
@@ -128,6 +128,72 @@ export async function POST(request) {
     // 🛑 Ignore bot messages
     if (event?.subtype === "bot_message") {
       return new Response("Ignored bot message", { status: 200 });
+    }
+
+    const userMessage = event.text;
+    const channel = event.channel;
+
+    // 🤖 Generate response
+    const botReply = await handleUserQuestion(userMessage);
+
+    // 📣 Send message back to Slack
+    await slackClient.chat.postMessage({
+      channel,
+      text: botReply,
+    });
+
+    return new Response(JSON.stringify({ status: "Message processed" }), {
+      status: 200,
+    });
+  } catch (error) {
+    console.error("Slack webhook error:", error);
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), {
+      status: 500,
+    });
+  }
+}
+*/
+import { handleUserQuestion } from "@/app/api/chatbot/route.js";
+import { WebClient } from "@slack/web-api";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const slackClient = new WebClient(process.env.SLACK_BOT_TOKEN);
+
+// Store bot user ID
+let botUserId = null;
+async function getBotUserId() {
+  if (!botUserId) {
+    const auth = await slackClient.auth.test();
+    botUserId = auth.user_id;
+  }
+  return botUserId;
+}
+
+export async function POST(request) {
+  try {
+    const body = await request.json();
+
+    // ✅ Slack URL verification
+    if (body.type === "url_verification") {
+      return new Response(JSON.stringify({ challenge: body.challenge }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const { event } = body;
+
+    // ⛔ Ignore bot messages (extra safety)
+    if (event?.subtype === "bot_message") {
+      return new Response("Ignored bot message (subtype)", { status: 200 });
+    }
+
+    // ⛔ Ignore own messages (based on user ID)
+    const botId = await getBotUserId();
+    if (event.user === botId) {
+      return new Response("Ignored self message (bot ID)", { status: 200 });
     }
 
     const userMessage = event.text;
