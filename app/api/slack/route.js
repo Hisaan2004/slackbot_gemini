@@ -355,66 +355,65 @@ export default async function handler(req, res) {
       text: "Sorry, something went wrong while answering your question.",
     });
   }
-}*/
+}*/import { WebClient } from "@slack/web-api";
 import dotenv from "dotenv";
-import { WebClient } from "@slack/web-api";
-import { handleUserQuestion } from "@/app/api/chatbot/route.js";
+import { handleUserQuestion } from "@/app/api/chatbot/route.js"; // or adjust path
 
 dotenv.config();
 
 const slackClient = new WebClient(process.env.SLACK_BOT_TOKEN);
 const processedEvents = new Set();
 
-export const config = {
-  api: {
-    bodyParser: true,
-  },
-};
+export async function POST(req) {
+  const body = await req.json();
 
-export default async function handler(req, res) {
-  if (req.method === "POST") {
-    const { type, event, challenge, event_id } = req.body;
-
-    // ✅ Slack URL verification
-    if (type === "url_verification") {
-      return res.status(200).send(challenge);
-    }
-
-    // ✅ Ignore events without actual message
-    if (!event || !event.type || event.type !== "message" || event.bot_id) {
-      return res.status(200).end(); // Acknowledge empty or bot message
-    }
-
-    // ✅ Prevent duplicate event processing
-    if (processedEvents.has(event_id)) {
-      console.log("Duplicate event ignored:", event_id);
-      return res.status(200).end();
-    }
-    processedEvents.add(event_id);
-
-    // ✅ Acknowledge right away to prevent retries
-    res.status(200).end();
-
-    try {
-      const userMessage = event.text;
-      const channelId = event.channel;
-
-      const reply = await handleUserQuestion(userMessage);
-
-      await slackClient.chat.postMessage({
-        channel: channelId,
-        text: reply || "I'm not sure how to respond to that.",
-      });
-    } catch (err) {
-      console.error("Error replying to Slack:", err.message);
-      await slackClient.chat.postMessage({
-        channel: event.channel,
-        text: "Sorry, something went wrong while answering your question.",
-      });
-    }
-  } else {
-    res.status(405).send("Method Not Allowed");
+  // ✅ Slack URL verification
+  if (body.type === "url_verification") {
+    return new Response(body.challenge, { status: 200 });
   }
+
+  // ✅ Validate request
+  if (!body.event) {
+    return new Response(JSON.stringify({ error: "Invalid request" }), {
+      status: 400,
+    });
+  }
+
+  const event = body.event;
+
+  // ✅ Avoid duplicate events
+  if (processedEvents.has(event.event_ts)) {
+    return new Response(null, { status: 200 });
+  }
+  processedEvents.add(event.event_ts);
+
+  // ✅ Acknowledge immediately
+  const response = new Response(null, { status: 200 });
+
+  try {
+    const userMessage = event.text;
+    const channelId = event.channel;
+
+    const botReply = await handleUserQuestion(userMessage);
+
+    await slackClient.chat.postMessage({
+      channel: channelId,
+      text: botReply || "I'm not sure how to respond to that.",
+    });
+  } catch (err) {
+    console.error("Error:", err.message);
+
+    await slackClient.chat.postMessage({
+      channel: event.channel,
+      text: "Sorry, something went wrong while answering your question.",
+    });
+  }
+
+  return response;
+}
+
+export async function GET() {
+  return new Response("Slack bot is running!", { status: 200 });
 }
 
 
