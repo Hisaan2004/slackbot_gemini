@@ -30,7 +30,7 @@ import { searchRelevantQA } from "@/lib/embedding/fetchQueryEmbedding.js";
 import CHATBOT_PROPMPT from "@/lib/chatbot/Prompt.js";
 
 const MEETING_INITIAL_PROMPT = "Do you want to schedule a meeting with our representative? Answer with yes or no.";
-
+const meetingHistory=[];
 const isMeetingRequest = (input) => {
   const keywords = ["meeting", "schedule", "appointment", "meet"];
   return keywords.some((kw) => input.toLowerCase().includes(kw));
