@@ -41,6 +41,7 @@ const isMeetingRequest = (input) => {
   const keywords = ["meeting", "schedule", "appointment", "meet"];
   return keywords.some((kw) => input.toLowerCase().includes(kw));
 };
+const MEETING_INITIAL_PROMPT = "Do you want to schedule a meeting with our representative? Answer with yes or no.";
 /*
 const MEETING_INITIAL_PROMPT = "Do you want to schedule a meeting with our representative? Answer with yes or no.";
 const EMAIL_PROMPT="Please enter your full name";
