@@ -37,6 +37,14 @@ let meetingState = {
   time: null,
   started: false,
 };
+const defaultState = {
+  step: null,
+  name: null,
+  email: null,
+  date: null,
+  time: null,
+  started: false,
+};
 const isMeetingRequest = (input) => {
   const keywords = ["meeting", "schedule", "appointment", "meet"];
   return keywords.some((kw) => input.toLowerCase().includes(kw));
