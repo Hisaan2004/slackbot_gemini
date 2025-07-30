@@ -24,29 +24,21 @@ export const handleUserQuestion = async (userPrompt) => {
     return "Sorry, something went wrong while answering your question.";
   }
 };*/
+/*
 import { google } from "@/services/gemini/index.js";
 import { generateText } from "ai";
 import { searchRelevantQA } from "@/lib/embedding/fetchQueryEmbedding.js";
 import CHATBOT_PROPMPT from "@/lib/chatbot/Prompt.js";
 
 const MEETING_INITIAL_PROMPT = "Do you want to schedule a meeting with our representative? Answer with yes or no.";
+const EMAIL_PROMPT="Please enter your full name";
+const NAME_PROMPT="lease enter your email address";
+const Date_PROMPT="please enter the date you want to schedule meeting format(DD-MM-YYYY)";
+const TIME_PROMPT="please enter the time between 11:00 to 17:00 format should be (HH:MM)"
 let meetingHistory=[];
 const isMeetingRequest = (input) => {
   const keywords = ["meeting", "schedule", "appointment", "meet"];
   return keywords.some((kw) => input.toLowerCase().includes(kw));
-};
-
-const MEETING_FLOW_PROMPT = (context, userPrompt) => {
-  return `You are a meeting assistant. Guide the user to set up a meeting by collecting:
-1. Name
-2. Email
-3. Date
-4. Time
-
-After collecting this information, respond with a summary and a Google Meet link hosted by 'Botified'.
-
-User said: ${userPrompt}
-Context: ${context || "N/A"}`;
 };
 
 export const handleUserQuestion = async (userPrompt) => {
@@ -73,29 +65,16 @@ export const handleUserQuestion = async (userPrompt) => {
       }
     }
 
-    // Step 3: If both flags are true → Proceed with meeting flow
     const hasRequested = meetingHistory.includes("meeting-requested");
     const hasConfirmed = meetingHistory.includes("user-confirmed");
 
-    /*if (hasRequested && hasConfirmed) {
-      const prompt = MEETING_FLOW_PROMPT("", "Let's start scheduling your meeting.");
-      const model = google("models/gemini-1.5-flash-latest");
-
-      const result = await generateText({
-        model,
-        messages: [{ role: "user", content: prompt }],
-      });
-
-      meetingHistory = []; // clear after meeting prompt is done
-      return result.text;
-    }*/
    if (hasRequested && hasConfirmed) {
   const prompt = MEETING_FLOW_PROMPT("", "Let's start scheduling your meeting.");
   const model = google("models/gemini-1.5-flash-latest");
 
   let result;
   let attempts = 0;
-  const maxAttempts = 5;
+  const maxAttempts = 3;
 
   while (attempts < maxAttempts) {
     try {
@@ -155,4 +134,98 @@ export const handleUserQuestion = async (userPrompt) => {
     console.error("Error in chatbot:", err);
     return "Sorry, something went wrong while answering your question. Please try again later.";
   }
+};*/
+export const handleUserQuestion = async (userPrompt) => {
+  try {
+    const lowerPrompt = userPrompt.toLowerCase();
+
+    // STEP 1: Detect intent to schedule a meeting
+    if (isMeetingRequest(lowerPrompt) && !meetingState.started) {
+      meetingState.started = true;
+      meetingState.step = "confirmation";
+      return MEETING_INITIAL_PROMPT;
+    }
+
+    // STEP 2: Handle confirmation
+    if (meetingState.started && meetingState.step === "confirmation") {
+      if (lowerPrompt.includes("yes")) {
+        meetingState.step = "name";
+        return "Please enter your full name.";
+      } else if (lowerPrompt.includes("no")) {
+        meetingState = { step: null, name: null, email: null, date: null, time: null, started: false };
+        return "Okay, no meeting will be scheduled.";
+      }
+    }
+
+    // STEP 3: Capture each field sequentially
+    if (meetingState.step === "name") {
+      meetingState.name = userPrompt;
+      meetingState.step = "email";
+      return "Please enter your email address.";
+    }
+
+    if (meetingState.step === "email") {
+      meetingState.email = userPrompt;
+      meetingState.step = "date";
+      return "Please enter the date for the meeting (format: DD-MM-YYYY).";
+    }
+
+    if (meetingState.step === "date") {
+      meetingState.date = userPrompt;
+      meetingState.step = "time";
+      return "Please enter the time for the meeting between 11:00 and 17:00 (format: HH:MM).";
+    }
+
+    if (meetingState.step === "time") {
+      meetingState.time = userPrompt;
+
+      // All info collected
+      const summary = `
+✅ Meeting Scheduled!
+
+**Name**: ${meetingState.name}  
+**Email**: ${meetingState.email}  
+**Date**: ${meetingState.date}  
+**Time**: ${meetingState.time}  
+**Google Meet Link**: https://meet.google.com/bot-ified-meeting  
+
+Let us know if you'd like to reschedule.`;
+
+      // Reset state
+      meetingState = { step: null, name: null, email: null, date: null, time: null, started: false };
+      return summary;
+    }
+
+    // If not in meeting flow, handle as normal chatbot
+    const topResults = await searchRelevantQA(userPrompt);
+    const context = topResults
+      .map((item, idx) => `Q${idx + 1}: ${item.question}\nA${idx + 1}: ${item.answer}`)
+      .join("\n\n");
+
+    const finalPrompt = CHATBOT_PROPMPT(context, userPrompt);
+    const model = google("models/gemini-1.5-flash-latest");
+
+    const maxRetries = 3;
+    let result;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        result = await generateText({
+          model,
+          messages: [{ role: "user", content: finalPrompt }],
+        });
+        break;
+      } catch (error) {
+        console.warn(`Attempt ${attempt} failed:`, error.message);
+        if (attempt === maxRetries) throw error;
+        await new Promise((res) => setTimeout(res, 1000 * attempt));
+      }
+    }
+
+    return result.text;
+  } catch (err) {
+    console.error("Error in chatbot:", err);
+    return "Sorry, something went wrong while answering your question. Please try again later.";
+  }
 };
+
