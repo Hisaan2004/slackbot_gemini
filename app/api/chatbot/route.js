@@ -24,12 +24,20 @@ export const handleUserQuestion = async (userPrompt) => {
     return "Sorry, something went wrong while answering your question.";
   }
 };*/
-/*
+
 import { google } from "@/services/gemini/index.js";
 import { generateText } from "ai";
 import { searchRelevantQA } from "@/lib/embedding/fetchQueryEmbedding.js";
 import CHATBOT_PROPMPT from "@/lib/chatbot/Prompt.js";
-
+let meetingState = {
+  step: null,      // e.g., 'name', 'email', 'date', 'time'
+  name: null,
+  email: null,
+  date: null,
+  time: null,
+  started: false,
+};
+/*
 const MEETING_INITIAL_PROMPT = "Do you want to schedule a meeting with our representative? Answer with yes or no.";
 const EMAIL_PROMPT="Please enter your full name";
 const NAME_PROMPT="lease enter your email address";
