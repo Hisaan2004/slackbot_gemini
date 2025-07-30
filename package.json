@@ -13,6 +13,7 @@
     "@google/generative-ai": "^0.24.1",
     "@pinecone-database/pinecone": "^6.1.2",
     "@slack/web-api": "^7.9.3",
+    "@upstash/redis": "^1.35.2",
     "ai": "^4.3.19",
     "dotenv": "^17.2.1",
     "mongodb": "^6.18.0",

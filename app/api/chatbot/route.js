@@ -24,7 +24,7 @@ export const handleUserQuestion = async (userPrompt) => {
     return "Sorry, something went wrong while answering your question.";
   }
 };*/
-
+import { redis } from "@/services/redis/index.js";
 import { google } from "@/services/gemini/index.js";
 import { generateText } from "ai";
 import { searchRelevantQA } from "@/lib/embedding/fetchQueryEmbedding.js";
@@ -151,11 +151,13 @@ export const handleUserQuestion = async (userPrompt) => {
 export const handleUserQuestion = async (userPrompt) => {
   try {
     const lowerPrompt = userPrompt.toLowerCase();
-
+    let meetingState = await redis.get(`meetingState:${userId}`);
+    if (!meetingState) meetingState = { ...defaultState };
     // STEP 1: Detect intent to schedule a meeting
     if (isMeetingRequest(lowerPrompt) && !meetingState.started) {
       meetingState.started = true;
       meetingState.step = "confirmation";
+      await redis.set(`meetingState:${userId}`, meetingState);
       return MEETING_INITIAL_PROMPT;
     }
 
@@ -163,9 +165,11 @@ export const handleUserQuestion = async (userPrompt) => {
     if (meetingState.started && meetingState.step === "confirmation") {
       if (lowerPrompt.includes("yes")) {
         meetingState.step = "name";
+        await redis.set(`meetingState:${userId}`, meetingState);
         return "Please enter your full name.";
       } else if (lowerPrompt.includes("no")) {
-        meetingState = { step: null, name: null, email: null, date: null, time: null, started: false };
+      //  meetingState = { step: null, name: null, email: null, date: null, time: null, started: false };
+        await redis.del(`meetingState:${userId}`);
         return "Okay, no meeting will be scheduled.";
       }
     }
@@ -174,18 +178,21 @@ export const handleUserQuestion = async (userPrompt) => {
     if (meetingState.step === "name") {
       meetingState.name = userPrompt;
       meetingState.step = "email";
+      await redis.set(`meetingState:${userId}`, meetingState);
       return "Please enter your email address.";
     }
 
     if (meetingState.step === "email") {
       meetingState.email = userPrompt;
       meetingState.step = "date";
+      await redis.set(`meetingState:${userId}`, meetingState);
       return "Please enter the date for the meeting (format: DD-MM-YYYY).";
     }
 
     if (meetingState.step === "date") {
       meetingState.date = userPrompt;
       meetingState.step = "time";
+      await redis.set(`meetingState:${userId}`, meetingState);
       return "Please enter the time for the meeting between 11:00 and 17:00 (format: HH:MM).";
     }
 
@@ -205,7 +212,8 @@ export const handleUserQuestion = async (userPrompt) => {
 Let us know if you'd like to reschedule.`;
 
       // Reset state
-      meetingState = { step: null, name: null, email: null, date: null, time: null, started: false };
+      //meetingState = { step: null, name: null, email: null, date: null, time: null, started: false };
+      await redis.del(`meetingState:${userId}`);
       return summary;
     }
 
