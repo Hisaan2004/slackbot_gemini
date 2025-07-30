@@ -148,7 +148,7 @@ export const handleUserQuestion = async (userPrompt) => {
     return "Sorry, something went wrong while answering your question. Please try again later.";
   }
 };*/
-export const handleUserQuestion = async (userPrompt) => {
+export const handleUserQuestion = async (userPrompt,userId) => {
   try {
     const lowerPrompt = userPrompt.toLowerCase();
     let meetingState = await redis.get(`meetingState:${userId}`);
