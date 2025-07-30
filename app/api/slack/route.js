@@ -360,7 +360,7 @@ export const config = {
     bodyParser: true,
   },
 };
-
+/*
 export async function POST(req) {
   const body = await req.json();
   const { type, event, challenge, event_id } = body;
@@ -414,4 +414,50 @@ export async function POST(req) {
 export async function GET() {
   return new Response("Slack bot is running!", { status: 200 });
 }
+*/
+export async function POST(req) {
+  const body = await req.json();
+  const { type, event, challenge } = body;
 
+  const headers = req.headers;
+  const isRetry = headers.get("x-slack-retry-num");
+
+  // ❌ Ignore retries to prevent duplicate responses
+  if (isRetry) {
+    console.log("Duplicate Slack event - retry detected. Ignored.");
+    return new Response(null, { status: 200 });
+  }
+
+  if (type === "url_verification") {
+    return new Response(challenge, { status: 200 });
+  }
+
+  const response = new Response(null, { status: 200 });
+
+  if (event && event.type === "message" && !event.bot_id) {
+    const userMessage = event.text;
+    const channelId = event.channel;
+
+    try {
+      const reply = await handleUserQuestion(userMessage);
+
+      await axios.post(
+        "https://slack.com/api/chat.postMessage",
+        {
+          channel: channelId,
+          text: reply,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error sending message to Slack:", error.message);
+    }
+  }
+
+  return response;
+}
