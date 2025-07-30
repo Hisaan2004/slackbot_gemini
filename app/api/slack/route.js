@@ -437,9 +437,10 @@ export async function POST(req) {
   if (event && event.type === "message" && !event.bot_id) {
     const userMessage = event.text;
     const channelId = event.channel;
+    const userId = req.body.event.user;
 
     try {
-      const reply = await handleUserQuestion(userMessage);
+      const reply = await handleUserQuestion(userMessage,userId);
 
       await axios.post(
         "https://slack.com/api/chat.postMessage",
