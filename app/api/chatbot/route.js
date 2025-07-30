@@ -77,7 +77,7 @@ export const handleUserQuestion = async (userPrompt) => {
     const hasRequested = meetingHistory.includes("meeting-requested");
     const hasConfirmed = meetingHistory.includes("user-confirmed");
 
-    if (hasRequested && hasConfirmed) {
+    /*if (hasRequested && hasConfirmed) {
       const prompt = MEETING_FLOW_PROMPT("", "Let's start scheduling your meeting.");
       const model = google("models/gemini-1.5-flash-latest");
 
@@ -88,7 +88,39 @@ export const handleUserQuestion = async (userPrompt) => {
 
       meetingHistory = []; // clear after meeting prompt is done
       return result.text;
+    }*/
+   if (hasRequested && hasConfirmed) {
+  const prompt = MEETING_FLOW_PROMPT("", "Let's start scheduling your meeting.");
+  const model = google("models/gemini-1.5-flash-latest");
+
+  let result;
+  let attempts = 0;
+  const maxAttempts = 5;
+
+  while (attempts < maxAttempts) {
+    try {
+      result = await generateText({
+        model,
+        messages: [{ role: "user", content: prompt }],
+      });
+      break; // success, exit the loop
+    } catch (error) {
+      if (error?.statusCode === 503 || error?.reason === 'maxRetriesExceeded') {
+        const delay = 2000 * (attempts + 1); // backoff: 2s, 4s, 6s...
+        console.warn(`Model overloaded. Retrying in ${delay / 1000}s...`);
+        await new Promise((res) => setTimeout(res, delay));
+        attempts++;
+      } else {
+        throw error; // rethrow other errors
+      }
     }
+  }
+
+  if (!result) throw new Error("Failed to generate response after retries.");
+
+  meetingHistory = [];
+  return result.text;
+}
     const topResults = await searchRelevantQA(userPrompt);
 
     const context = topResults
