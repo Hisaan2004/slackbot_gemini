@@ -437,7 +437,7 @@ export async function POST(req) {
   if (event && event.type === "message" && !event.bot_id) {
     const userMessage = event.text;
     const channelId = event.channel;
-    const userId = req.body.event.user;
+    const userId = event.user;
 
     try {
       const reply = await handleUserQuestion(userMessage,userId);
