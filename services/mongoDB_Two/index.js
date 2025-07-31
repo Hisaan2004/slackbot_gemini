@@ -1,10 +1,14 @@
 import { MongoClient } from "mongodb";
-import { CONFIG } from "@/config/index.js"; 
+
 let cachedClient = null;
 let cachedDb = null;
 
 export async function connectToDB(name) {
   if (cachedDb) return cachedDb;
+
+  if (!process.env.MONGO_URI_TWO) {
+    throw new Error("Missing MONGO_URI_TWO in environment variables.");
+  }
 
   try {
     cachedClient = new MongoClient(process.env.MONGO_URI_TWO);
