@@ -28,6 +28,7 @@ import { redis } from "@/services/redis/index.js";
 import { google } from "@/services/gemini/index.js";
 import { generateText } from "ai";
 import { searchRelevantQA } from "@/lib/embedding/fetchQueryEmbedding.js";
+import {checkAvailability,addToDB} from '@/lib/checkAvailability/index.js'
 import CHATBOT_PROPMPT from "@/lib/chatbot/Prompt.js";
 let meetingState = {
   step: null,      // e.g., 'name', 'email', 'date', 'time'
@@ -204,9 +205,12 @@ export const handleUserQuestion = async (userPrompt,userId) => {
       return "Please enter the time for the meeting between 11:00 and 17:00 (format: HH:MM).";
     }
 
-    if (meetingState.step === "time") {
+ /*   if (meetingState.step === "time") {
       meetingState.time = userPrompt;
-
+     const status=0;
+const check=checkAvailability(meetingState.date,meetingState.time);
+if(check==0){
+  addToDB(meetingState.name,meetingState.email,meetingState.date,meetingState.time,status)
       // All info collected
       const summary = `
 ✅ Meeting Scheduled!
@@ -224,7 +228,44 @@ Let us know if you'd like to reschedule.`;
       await redis.del(`meetingState:${userId}`);
       return summary;
     }
+    else{
+     meetingState.step = "email";
+     return "Sorry the time you selected it already occupies please enter valid time";
+    }*/
+   if (meetingState.step === "time") {
+  meetingState.time = userPrompt;
 
+  // Check availability
+  const check = await checkAvailability(meetingState.time, meetingState.date);
+
+  if (check.available) {
+    // Book it
+    await addToDB(
+      meetingState.name,
+      meetingState.email,
+      meetingState.time,
+      meetingState.date
+    );
+
+    const summary = `
+✅ Meeting Scheduled!
+
+**Name**: ${meetingState.name}  
+**Email**: ${meetingState.email}  
+**Date**: ${meetingState.date}  
+**Time**: ${meetingState.time}  
+**Google Meet Link**: https://meet.google.com/bot-ified-meeting  
+
+Let us know if you'd like to reschedule.`;
+
+    await redis.del(`meetingState:${userId}`);
+    return summary;
+  } else {
+    meetingState.step = "time"; // Ask for time again
+    await redis.set(`meetingState:${userId}`, meetingState);
+    return "❌ That time is already booked. Please choose a different time (HH:MM between 11:00 and 17:00).";
+  }
+}
     // If not in meeting flow, handle as normal chatbot
     const topResults = await searchRelevantQA(userPrompt);
     const context = topResults
@@ -234,7 +275,7 @@ Let us know if you'd like to reschedule.`;
     const finalPrompt = CHATBOT_PROPMPT(context, userPrompt);
     const model = google("models/gemini-1.5-flash-latest");
 
-    const maxRetries = 3;
+    const maxRetries = 2;
     let result;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
