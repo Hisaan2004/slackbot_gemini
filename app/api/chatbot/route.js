@@ -5,14 +5,7 @@ import { generateText } from "ai";
 import { searchRelevantQA } from "@/lib/embedding/fetchQueryEmbedding.js";
 import {checkAvailability,addToDB} from '@/lib/checkAvailability/index.js'
 import CHATBOT_PROPMPT from "@/lib/chatbot/Prompt.js";
-/*let meetingState = {
-  step: null,      
-  name: null,
-  email: null,
-  date: null,
-  time: null,
-  started: false,
-};*/
+
 const defaultState = {
   step: null,
   name: null,
@@ -102,7 +95,7 @@ export const handleUserQuestion = async (userPrompt,userId) => {
       meetingState.time,
       meetingState.date
     );
-
+const meetLink = generateMeetLink(userId);
     const summary = `
 ✅ Meeting Scheduled!
 
@@ -110,7 +103,7 @@ export const handleUserQuestion = async (userPrompt,userId) => {
 **Email**: ${meetingState.email}  
 **Date**: ${meetingState.date}  
 **Time**: ${meetingState.time}  
-**Google Meet Link**: https://meet.google.com/bot-ified-meeting  
+**Google Meet Link**: ${meetLink}  
 
 Let us know if you'd like to reschedule.`;
 deleteState(userId)
@@ -156,4 +149,8 @@ deleteState(userId)
 };
 const deleteState = async (userId) => {
   await redis.del(`meetingState:${userId}`);
+};
+const generateMeetLink = (userId) => {
+  const randomPart = Math.random().toString(36).substring(2, 9);
+  return `https://meet.google.com/${randomPart}-${userId.toString().slice(-3)}`;
 };
