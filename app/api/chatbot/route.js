@@ -63,8 +63,8 @@ export const handleUserQuestion = async (userPrompt,userId) => {
         await deleteState(userId);
         return "Okay, no meeting will be scheduled.";
       }
-      meetingState.email = userPrompt;
-
+      meetingState.email = userPrompt.trim();
+//meetingState.email = userPrompt.trim();
       meetingState.step = "date";
       await redis.set(`meetingState:${userId}`, meetingState);
       return "Please enter the date for the meeting (format: DD-MM-YYYY).if you wanted to discontinue the process enter 'No'";
