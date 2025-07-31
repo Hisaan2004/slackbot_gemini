@@ -11,7 +11,7 @@ export async function connectToDB(name) {
     await cachedClient.connect();
 
     console.log("MongoDB connected");
-    cachedDb = cachedClient.db(process.env.name);
+    cachedDb = cachedClient.db(name);
     return cachedDb;
   } catch (error) {
     console.error("MongoDB connection failed", error);
