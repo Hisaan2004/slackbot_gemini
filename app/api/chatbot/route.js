@@ -175,7 +175,7 @@ export const handleUserQuestion = async (userPrompt,userId) => {
       if (lowerPrompt.includes("yes")) {
         meetingState.step = "name";
         await redis.set(`meetingState:${userId}`, meetingState);
-        return "Please enter your full name.if you wanted to discontinue the process enter No";
+        return "Please enter your full name.if you wanted to discontinue the process enter 'No'";
       } else if (lowerPrompt.includes("no")) {
       //  meetingState = { step: null, name: null, email: null, date: null, time: null, started: false };
         await redis.del(`meetingState:${userId}`);
@@ -185,31 +185,37 @@ export const handleUserQuestion = async (userPrompt,userId) => {
 
     // STEP 3: Capture each field sequentially
     if (meetingState.step === "name") {
-      if (userPrompt.includes("no")) {
-      //  meetingState = { step: null, name: null, email: null, date: null, time: null, started: false };
-      deletestate(userId);
-       // await redis.del(`meetingState:${userId}`);
+       if (lowerPrompt.includes("no")) {
+        await deleteState(userId);
         return "Okay, no meeting will be scheduled.";
       }
       meetingState.name = userPrompt;
       meetingState.step = "email";
       await redis.set(`meetingState:${userId}`, meetingState);
-      return "Please enter your email address.if you wanted to discontinue the process enter No";
+      return "Please enter your email address.if you wanted to discontinue the process enter'No'";
     }
 
     if (meetingState.step === "email") {
+       if (lowerPrompt.includes("no")) {
+        await deleteState(userId);
+        return "Okay, no meeting will be scheduled.";
+      }
       meetingState.email = userPrompt;
 
       meetingState.step = "date";
       await redis.set(`meetingState:${userId}`, meetingState);
-      return "Please enter the date for the meeting (format: DD-MM-YYYY).if you wanted to discontinue the process enter No";
+      return "Please enter the date for the meeting (format: DD-MM-YYYY).if you wanted to discontinue the process enter 'No'";
     }
 
     if (meetingState.step === "date") {
+       if (lowerPrompt.includes("no")) {
+        await deleteState(userId);
+        return "Okay, no meeting will be scheduled.";
+      }
       meetingState.date = userPrompt;
       meetingState.step = "time";
       await redis.set(`meetingState:${userId}`, meetingState);
-      return "Please enter the time for the meeting between 11:00 and 17:00 (format: HH:MM).if you wanted to discontinue the process enter No";
+      return "Please enter the time for the meeting between 11:00 and 17:00 (format: HH:MM).if you wanted to discontinue the process enter 'No'";
     }
 
  /*   if (meetingState.step === "time") {
@@ -264,8 +270,8 @@ Let us know if you'd like to reschedule.`;
 **Google Meet Link**: https://meet.google.com/bot-ified-meeting  
 
 Let us know if you'd like to reschedule.`;
-
-    await redis.del(`meetingState:${userId}`);
+deleteState(userId)
+    //await redis.del(`meetingState:${userId}`);
     return summary;
   } else {
     meetingState.step = "time"; // Ask for time again
