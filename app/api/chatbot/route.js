@@ -300,7 +300,7 @@ Let us know if you'd like to reschedule.`;
     return result.text;
 
   } catch (err) {
-    if(userPrompt!=" "){
+    if(lowerPrompt!=""){
     console.error("❌ Error in chatbot:", err);
     return "Sorry, something went wrong while answering your question. Please try again later.";
   }
