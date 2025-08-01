@@ -106,7 +106,7 @@ const meetLink = generateMeetLink(userId);
 **Google Meet Link**: ${meetLink}  
 
 Let us know if you'd like to reschedule.`;
-deleteState(userId)
+await deleteState(userId)
    
     return summary;
   } else {
