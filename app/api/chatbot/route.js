@@ -181,7 +181,7 @@ const MEETING_INITIAL_PROMPT = "Do you want to schedule a meeting with our repre
 
 export const handleUserQuestion = async (userPrompt, userId) => {
   try {
-    if (typeof userPrompt !== 'string' || userPrompt.trim() === "") {
+     if (typeof userPrompt !== 'string' || userPrompt.trim() === "") {
         console.warn("handleUserQuestion called with an empty or invalid prompt.");
         return; // Exit silently
     }
@@ -360,3 +360,4 @@ const deleteState = async (userId) => {
   const randomPart = Math.random().toString(36).substring(2, 9);
   return `https://meet.google.com/${randomPart}-${userId.toString().slice(-3)}`;
 };*/
+
