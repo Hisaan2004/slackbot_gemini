@@ -201,6 +201,10 @@ export const handleUserQuestion = async (userPrompt, userId) => {
         await deleteState(userId);
         return "Okay, no meeting will be scheduled.";
       }
+      else{
+        await deleteState(userId);
+        return "Okay, no meeting will be scheduled.";
+      }
     }
 
     if (meetingState.step === "name") {
