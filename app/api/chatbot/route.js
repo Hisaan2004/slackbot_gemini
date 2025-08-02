@@ -225,7 +225,7 @@ export const handleUserQuestion = async (userPrompt, userId) => {
       }
       meetingState.email = userPrompt.trim();
       meetingState.step = "date";
-      const authLink = `https://yourdomain.com/api/google/auth?email=${meetingState.email}`;
+      const authLink = `https://slackbot-gemini.vercel.app/api/google/auth?email=${meetingState.email}`;
     await redis.set(`meetingState:${userId}`, meetingState);
     return `✅ Now please [click here to authenticate with Google Calendar](${authLink}). Once done, enter the meeting date (format: DD-MM-YYYY).`;
         }
