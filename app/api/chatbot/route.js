@@ -314,8 +314,8 @@ const deleteState = async (userId) => {
   await redis.del(`meetingState:${userId}`);
 };
 
-const generateMeetLink = (userId) => {
+/*const generateMeetLink = (userId) => {
   const randomPart = Math.random().toString(36).substring(2, 9);
   return `https://meet.google.com/${randomPart}-${userId.toString().slice(-3)}`;
-};
+};*/
 
