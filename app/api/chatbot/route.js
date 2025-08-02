@@ -181,6 +181,10 @@ const MEETING_INITIAL_PROMPT = "Do you want to schedule a meeting with our repre
 
 export const handleUserQuestion = async (userPrompt, userId) => {
   try {
+    if (typeof userPrompt !== 'string' || userPrompt.trim() === "") {
+        console.warn("handleUserQuestion called with an empty or invalid prompt.");
+        return; // Exit silently
+    }
     const lowerPrompt = userPrompt.toLowerCase();
     let meetingState = await redis.get(`meetingState:${userId}`);
     if (!meetingState) meetingState = { ...defaultState };
