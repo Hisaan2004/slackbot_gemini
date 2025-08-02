@@ -221,7 +221,7 @@ await redis.set(
   })
 );
 }*/
-
+/*
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
@@ -273,4 +273,45 @@ export async function GET(req) {
   console.log("🔍 Redis check after set:", confirm);
 
   return new Response("Token saved successfully", { status: 200 });
+}*/
+// /api/auth/callback.js
+// 
+/*
+import { redis } from "@/services/redis"; // adjust path
+
+export async function GET(req) {
+  const { searchParams } = new URL(req.url);
+  const code = searchParams.get("code");
+  const state = searchParams.get("state"); // email passed earlier
+
+  if (!code || !state) return new Response("Missing code or state", { status: 400 });
+
+  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code,
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: process.env.REDIRECT_URI,
+      grant_type: "authorization_code",
+    }),
+  });
+
+  const { access_token, refresh_token, id_token, expires_in } = await tokenRes.json();
+  const payload = JSON.parse(Buffer.from(id_token.split('.')[1], 'base64').toString());
+  const googleEmail = payload.email;
+  const email = (state || googleEmail).toLowerCase();
+
+  await redis.set(
+    `tokens:${email}`,
+    JSON.stringify({
+      access_token,
+      refresh_token,
+      expires_at: Date.now() + expires_in * 1000,
+    })
+  );
+
+  return new Response("Tokens saved successfully. You can now create meetings.");
 }
+*/

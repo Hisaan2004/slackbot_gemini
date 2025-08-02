@@ -225,6 +225,14 @@ export const handleUserQuestion = async (userPrompt, userId) => {
       }
       meetingState.email = userPrompt.trim();
       meetingState.step = "date";
+        const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${process.env.GOOGLE_CLIENT_ID}` +
+      `&redirect_uri=${process.env.REDIRECT_URI}` +
+      `&response_type=code` +
+      `&scope=${encodeURIComponent("https://www.googleapis.com/auth/calendar.events")}` +
+      `&access_type=offline` +
+      `&prompt=consent` +
+      `&state=${meetingState.email}`;
       await redis.set(`meetingState:${userId}`, meetingState);
       return "Please enter the date for the meeting (format: DD-MM-YYYY). If you want to cancel, type 'No'.";
     }
@@ -258,7 +266,13 @@ export const handleUserQuestion = async (userPrompt, userId) => {
         );
 
         //const meetLink = generateMeetLink(userId);
-        const meetLink = await createGoogleMeetEvent(meetingState);
+        //const meetLink = await createGoogleMeetEvent(meetingState);
+        const meetLink = await createGoogleMeetEvent(meetingState).catch((err) => {
+  if (err.message.includes("not authenticated")) {
+    return `🔒 Please authenticate first by visiting: https://yourdomain.com/api/auth/redirect?email=${meetingState.email}`;
+  }
+  throw err;
+});
         const summary = `✅ Meeting Scheduled!
 
 **Name**: ${meetingState.name}  
