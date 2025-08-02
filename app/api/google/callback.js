@@ -48,7 +48,7 @@ export default async function handler(req, res) {
 }
 */
 // /api/auth/google/callback.js
-
+/*
 import axios from 'axios';
 import { redis } from "@/services/redis/index.js";
 
@@ -73,6 +73,40 @@ export default async function handler(req, res) {
   const email = emailFromState?.toLowerCase() || googleEmail;
 
   // Store token
+  await redis.set(`tokens:${email}`, JSON.stringify({
+    access_token,
+    refresh_token,
+    expires_at: Date.now() + expires_in * 1000
+  }));
+
+  res.send("✅ Google access granted. You may now return to Slack and schedule a meeting.");
+}
+*/
+import axios from 'axios';
+import { redis } from "@/services/redis/index.js";
+
+export default async function handler(req, res) {
+  const code = req.query.code;
+  const emailFromState = req.query.state; // email passed via redirect
+
+  const response = await axios.post('https://oauth2.googleapis.com/token', {
+    code,
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    client_secret: process.env.GOOGLE_CLIENT_SECRET,
+    redirect_uri: process.env.GOOGLE_REDIRECT_URI,
+    grant_type: 'authorization_code'
+  });
+
+  const { access_token, refresh_token, expires_in, id_token } = response.data;
+
+  // Decode Google email
+  const payload = JSON.parse(Buffer.from(id_token.split('.')[1], 'base64').toString());
+  const googleEmail = payload.email.toLowerCase();
+
+  // Use either the Slack-provided email from state OR Google email
+  const email = (emailFromState || googleEmail).toLowerCase();
+
+  // ✅ Store token by email in Redis
   await redis.set(`tokens:${email}`, JSON.stringify({
     access_token,
     refresh_token,
