@@ -175,7 +175,7 @@ export default async function handler(req, res) {
   }
 }
 */
-export async function GET(req) {
+/*export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
   const state = searchParams.get("state"); // 👈 This contains the email you passed earlier
@@ -190,8 +190,8 @@ export async function GET(req) {
       grant_type: "authorization_code",
     }),
   });
-
-  const { access_token, refresh_token, id_token } = await tokenResponse.json();
+*/
+ /* const { access_token, refresh_token, id_token } = await tokenResponse.json();
 
   const payload = JSON.parse(Buffer.from(id_token.split('.')[1], 'base64').toString());
   const googleEmail = payload.email;
@@ -204,5 +204,73 @@ export async function GET(req) {
   );
 
   return Response.redirect("https://slack.com/app_redirect_page");
-}
+}*//*
+const { access_token, refresh_token, id_token, expires_in } = await tokenResponse.json();
 
+const payload = JSON.parse(Buffer.from(id_token.split('.')[1], 'base64').toString());
+const googleEmail = payload.email;
+
+const email = (state || googleEmail).toLowerCase();
+
+await redis.set(
+  `tokens:${email}`,
+  JSON.stringify({
+    access_token,
+    refresh_token,
+    expires_at: Date.now() + expires_in * 1000 // ✅ This is crucial!
+  })
+);
+}*/
+
+export async function GET(req) {
+  const { searchParams } = new URL(req.url);
+  const code = searchParams.get("code");
+  const state = searchParams.get("state");
+
+  // Logging the incoming values
+  console.log("🔑 Received code:", code);
+  console.log("📩 Received state (email):", state);
+
+  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    body: new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: process.env.REDIRECT_URI,
+      code,
+      grant_type: "authorization_code",
+    }),
+  });
+
+  const {
+    access_token,
+    refresh_token,
+    id_token,
+    expires_in
+  } = await tokenResponse.json();
+
+  if (!access_token || !refresh_token || !id_token) {
+    console.error("❌ Missing token fields in response");
+    return new Response("Token exchange failed", { status: 400 });
+  }
+
+  const payload = JSON.parse(Buffer.from(id_token.split('.')[1], 'base64').toString());
+  const googleEmail = payload.email;
+  const email = (state || googleEmail).toLowerCase();
+
+  const redisKey = `tokens:${email}`;
+  const tokenData = {
+    access_token,
+    refresh_token,
+    expires_at: Date.now() + expires_in * 1000
+  };
+
+  await redis.set(redisKey, JSON.stringify(tokenData));
+  console.log("✅ Saved token to Redis under key:", redisKey);
+
+  // Optional: confirm it was saved
+  const confirm = await redis.get(redisKey);
+  console.log("🔍 Redis check after set:", confirm);
+
+  return new Response("Token saved successfully", { status: 200 });
+}
