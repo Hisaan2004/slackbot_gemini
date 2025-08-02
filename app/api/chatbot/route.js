@@ -154,12 +154,14 @@ const generateMeetLink = (userId) => {
   const randomPart = Math.random().toString(36).substring(2, 9);
   return `https://meet.google.com/${randomPart}-${userId.toString().slice(-3)}`;
 };*/
+
 import { redis } from "@/services/redis/index.js";
 import { google } from "@/services/gemini/index.js";
 import { generateText } from "ai";
 import { searchRelevantQA } from "@/lib/embedding/fetchQueryEmbedding.js";
 import { checkAvailability, addToDB } from '@/lib/checkAvailability/index.js';
 import CHATBOT_PROPMPT from "@/lib/chatbot/Prompt.js";
+import {createGoogleMeetEvent} from '@/lib/googleMeetHelper/createMeet.js'
 
 const defaultState = {
   step: null,
@@ -251,7 +253,8 @@ export const handleUserQuestion = async (userPrompt, userId) => {
           meetingState.date
         );
 
-        const meetLink = generateMeetLink(userId);
+        //const meetLink = generateMeetLink(userId);
+        const meetLink = await createGoogleMeetEvent(meetingState);
         const summary = `✅ Meeting Scheduled!
 
 **Name**: ${meetingState.name}  
