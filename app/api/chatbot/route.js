@@ -218,17 +218,44 @@ export const handleUserQuestion = async (userPrompt, userId) => {
       return "Please enter your email address. If you want to cancel, type 'No'.";
     }
 
-    if (meetingState.step === "email") {
+   /* if (meetingState.step === "email") {
       if (lowerPrompt.includes("no")) {
         await deleteState(userId);
         return "Okay, no meeting will be scheduled.";
       }
       meetingState.email = userPrompt.trim();
       meetingState.step = "date";
-      const authLink = `https://slackbot-gemini.vercel.app/api/google/auth?email=${meetingState.email}`;
+      const cleanEmail = email.includes('|') ? email.split('|')[1].replace('>', '') : email;
+      const authLink = `https://slackbot-gemini.vercel.app/api/google/auth?email=${cleanEmail}`;
     await redis.set(`meetingState:${userId}`, meetingState);
     return `✅ Now please [click here to authenticate with Google Calendar](${authLink}). Once done, enter the meeting date (format: DD-MM-YYYY).`;
-        }
+    }*/
+   if (meetingState.step === "email") {
+    if (lowerPrompt.includes("no")) {
+        await deleteState(userId);
+        return "Okay, no meeting will be scheduled.";
+    }
+    
+    meetingState.email = userPrompt.trim();
+    meetingState.step = "date";
+    
+    // --- START OF CORRECTION ---
+
+    // Use userPrompt, which contains the raw input from Slack.
+    const rawEmailInput = userPrompt.trim();
+    
+    // This logic correctly handles Slack's "mailto" format.
+    const cleanEmail = rawEmailInput.includes('|') 
+        ? rawEmailInput.split('|')[1].replace('>', '') 
+        : rawEmailInput;
+
+    const authLink = `https://slackbot-gemini.vercel.app/api/google/auth?email=${encodeURIComponent(cleanEmail)}`;
+    
+    // --- END OF CORRECTION ---
+
+    await redis.set(`meetingState:${userId}`, meetingState);
+    return `✅ Now please [click here to authenticate with Google Calendar](${authLink}). Once done, enter the meeting date (format: DD-MM-YYYY).`;
+}
 
     if (meetingState.step === "date") {
       if (lowerPrompt.includes("no")) {
