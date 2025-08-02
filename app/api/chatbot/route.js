@@ -225,17 +225,10 @@ export const handleUserQuestion = async (userPrompt, userId) => {
       }
       meetingState.email = userPrompt.trim();
       meetingState.step = "date";
-        const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${process.env.GOOGLE_CLIENT_ID}` +
-      `&redirect_uri=${process.env.REDIRECT_URI}` +
-      `&response_type=code` +
-      `&scope=${encodeURIComponent("https://www.googleapis.com/auth/calendar.events")}` +
-      `&access_type=offline` +
-      `&prompt=consent` +
-      `&state=${meetingState.email}`;
-      await redis.set(`meetingState:${userId}`, meetingState);
-      return "Please enter the date for the meeting (format: DD-MM-YYYY). If you want to cancel, type 'No'.";
-    }
+      const authLink = `https://yourdomain.com/api/google/auth?email=${meetingState.email}`;
+    await redis.set(`meetingState:${userId}`, meetingState);
+    return `✅ Now please [click here to authenticate with Google Calendar](${authLink}). Once done, enter the meeting date (format: DD-MM-YYYY).`;
+        }
 
     if (meetingState.step === "date") {
       if (lowerPrompt.includes("no")) {
