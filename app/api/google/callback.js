@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   // You’ll probably want to store this per-user in a DB
   // For now, we just return it
   res.status(200).json({ access_token, refresh_token });
-}*/
+}*//*
 import axios from 'axios';
 import { redis } from "@/services/redis/index.js"; // assuming you use Redis
 
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
 
   res.send("✅ Google access granted. You may now return to Slack and schedule a meeting.");
 }
-
+*/
 // /api/auth/google/callback.js
 /*
 import axios from 'axios';
@@ -175,3 +175,34 @@ export default async function handler(req, res) {
   }
 }
 */
+export async function GET(req) {
+  const { searchParams } = new URL(req.url);
+  const code = searchParams.get("code");
+  const state = searchParams.get("state"); // 👈 This contains the email you passed earlier
+
+  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    body: new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: process.env.REDIRECT_URI,
+      code,
+      grant_type: "authorization_code",
+    }),
+  });
+
+  const { access_token, refresh_token, id_token } = await tokenResponse.json();
+
+  const payload = JSON.parse(Buffer.from(id_token.split('.')[1], 'base64').toString());
+  const googleEmail = payload.email;
+
+  const email = (state || googleEmail).toLowerCase(); // ✅ Use the one passed via Slack
+
+  await redis.set(
+    `tokens:${email}`,
+    JSON.stringify({ access_token, refresh_token }),
+  );
+
+  return Response.redirect("https://slack.com/app_redirect_page");
+}
+
