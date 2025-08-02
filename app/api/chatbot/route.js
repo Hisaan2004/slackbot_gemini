@@ -234,7 +234,7 @@ export const handleUserQuestion = async (userPrompt, userId) => {
     await redis.set(`meetingState:${userId}`, meetingState);
     return `✅ Now please [click here to authenticate with Google Calendar](${authLink}). Once done, enter the meeting date (format: DD-MM-YYYY).`;
     }*/
-   if (meetingState.step === "email") {
+  /* if (meetingState.step === "email") {
     if (lowerPrompt.includes("no")) {
         await deleteState(userId);
         return "Okay, no meeting will be scheduled.";
@@ -259,6 +259,42 @@ export const handleUserQuestion = async (userPrompt, userId) => {
 
     await redis.set(`meetingState:${userId}`, meetingState);
     return `✅ Now please [click here to authenticate with Google Calendar](${authLink}). Once done, enter the meeting date (format: DD-MM-YYYY).`;
+}*/
+if (meetingState.step === "email") {
+    if (lowerPrompt.includes("no")) {
+        await deleteState(userId);
+        return "Okay, no meeting will be scheduled.";
+    }
+
+    const rawEmailInput = userPrompt.trim();
+    const cleanEmail = rawEmailInput.includes('|')
+        ? rawEmailInput.split('|')[1].replace('>', '')
+        : rawEmailInput;
+
+    // FIX #1: Always store and use lowercase email to avoid mismatches
+    meetingState.email = cleanEmail.toLowerCase();
+    
+    // FIX #2: Change the step and the prompt to wait for confirmation
+    meetingState.step = "awaiting_auth_confirmation"; // A new step
+    
+    const authLink = `https://slackbot-gemini.vercel.app/api/google/auth?email=${encodeURIComponent(meetingState.email)}`;
+
+    await redis.set(`meetingState:${userId}`, meetingState);
+    
+    // NEW PROMPT
+    return `✅ I have your email. Now, please [click here to authenticate with Google Calendar](${authLink}).\n\nAfter you have successfully authenticated, please type **"done"** to continue.`;
+}
+
+// NEW STEP HANDLER to wait for the user's confirmation
+if (meetingState.step === "awaiting_auth_confirmation") {
+    if (lowerPrompt.trim() === "done") {
+        meetingState.step = "date";
+        await redis.set(`meetingState:${userId}`, meetingState);
+        return "Great! Authentication confirmed. Please enter the meeting date (format: DD-MM-YYYY).";
+    } else {
+        // Remind the user what to do if they type something else
+        return 'Please finish the authentication and type **"done"** to proceed.';
+    }
 }
 
     if (meetingState.step === "date") {
@@ -360,4 +396,3 @@ const deleteState = async (userId) => {
   const randomPart = Math.random().toString(36).substring(2, 9);
   return `https://meet.google.com/${randomPart}-${userId.toString().slice(-3)}`;
 };*/
-
