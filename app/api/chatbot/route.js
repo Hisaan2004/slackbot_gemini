@@ -239,26 +239,36 @@ export const handleUserQuestion = async (userPrompt, userId) => {
         await deleteState(userId);
         return "Okay, no meeting will be scheduled.";
     }
-    
-    meetingState.email = userPrompt.trim();
-    meetingState.step = "date";
-    
-    // --- START OF CORRECTION ---
 
-    // Use userPrompt, which contains the raw input from Slack.
     const rawEmailInput = userPrompt.trim();
-    
-    // This logic correctly handles Slack's "mailto" format.
-    const cleanEmail = rawEmailInput.includes('|') 
-        ? rawEmailInput.split('|')[1].replace('>', '') 
+    const cleanEmail = rawEmailInput.includes('|')
+        ? rawEmailInput.split('|')[1].replace('>', '')
         : rawEmailInput;
 
-    const authLink = `https://slackbot-gemini.vercel.app/api/google/auth?email=${encodeURIComponent(cleanEmail)}`;
+    // FIX #1: Always store and use lowercase email to avoid mismatches
+    meetingState.email = cleanEmail.toLowerCase();
     
-    // --- END OF CORRECTION ---
+    // FIX #2: Change the step and the prompt to wait for confirmation
+    meetingState.step = "awaiting_auth_confirmation"; // A new step
+    
+    const authLink = `https://slackbot-gemini.vercel.app/api/google/auth?email=${encodeURIComponent(meetingState.email)}`;
 
     await redis.set(`meetingState:${userId}`, meetingState);
-    return `✅ Now please [click here to authenticate with Google Calendar](${authLink}). Once done, enter the meeting date (format: DD-MM-YYYY).`;
+    
+    // NEW PROMPT
+    return `✅ I have your email. Now, please [click here to authenticate with Google Calendar](${authLink}).\n\nAfter you have successfully authenticated, please type **"done"** to continue.`;
+}
+
+// NEW STEP HANDLER to wait for the user's confirmation
+if (meetingState.step === "awaiting_auth_confirmation") {
+    if (lowerPrompt.trim() === "done") {
+        meetingState.step = "date";
+        await redis.set(`meetingState:${userId}`, meetingState);
+        return "Great! Authentication confirmed. Please enter the meeting date (format: DD-MM-YYYY).";
+    } else {
+        // Remind the user what to do if they type something else
+        return 'Please finish the authentication and type **"done"** to proceed.';
+    }
 }
 
     if (meetingState.step === "date") {
