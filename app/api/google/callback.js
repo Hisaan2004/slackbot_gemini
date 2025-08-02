@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   // You’ll probably want to store this per-user in a DB
   // For now, we just return it
   res.status(200).json({ access_token, refresh_token });
-}*//*
+}*/
 import axios from 'axios';
 import { redis } from "@/services/redis/index.js"; // assuming you use Redis
 
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
 
   res.send("✅ Google access granted. You may now return to Slack and schedule a meeting.");
 }
-*/
+
 // /api/auth/google/callback.js
 /*
 import axios from 'axios';
@@ -116,6 +116,7 @@ export default async function handler(req, res) {
   res.send("✅ Google access granted. You may now return to Slack and schedule a meeting.");
 }
 */
+/*
 import axios from 'axios';
 import { redis } from "@/services/redis/index.js";
 
@@ -173,4 +174,4 @@ export default async function handler(req, res) {
     res.status(500).send("Google authorization failed. Please try again.");
   }
 }
-
+*/
