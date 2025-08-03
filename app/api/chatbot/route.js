@@ -439,7 +439,19 @@ export const handleUserQuestion = async (userPrompt, userId) => {
         await deleteState(userId);
         return "Okay, no meeting will be scheduled.";
       }
-      meetingState.email = userPrompt; // Corrected this line
+     // meetingState.email = userPrompt; // Corrected this line
+      let userEmail = userPrompt;
+    
+    // Check for Slack's mailto format <mailto:email|email>
+    const slackEmailMatch = userPrompt.match(/<mailto:[^|]+\|([^>]+)>/);
+
+    if (slackEmailMatch && slackEmailMatch[1]) {
+        // If it's a Slack email link, extract the clean email
+        userEmail = slackEmailMatch[1];
+        console.log(`Extracted clean email from Slack format: ${userEmail}`);
+    }
+
+    meetingState.email = userEmail; // Save the cleaned email
       meetingState.step = "date"; // Corrected this line
       await redis.set(`meetingState:${userId}`, meetingState);
       return "Please enter the meeting date (format: DD-MM-YYYY).";
