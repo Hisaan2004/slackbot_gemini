@@ -214,7 +214,7 @@ const extractFieldFromPrompt = async (field, userPrompt) => {
 Extract only the "${field}" from the following message:
 "${userPrompt}"
 
-Return only the "${field}" value as plain text with no extra words.
+Return only the "${field}" value as plain text with no extra words.of the date is in any form convert it in format of DD-MM-YYYY.if the time is in any format change it to HH:MM format.
 If the value is invalid or unclear, just return "null".
 `.trim();
 
@@ -308,7 +308,7 @@ export const handleUserQuestion = async (userPrompt, userId) => {
       }
 
       const date = await extractFieldFromPrompt("date", userPrompt);
-      if (!date || !/^\d{2}-\d{2}-\d{4}$/.test(date)) {
+      if (!date /*|| !/^\d{2}-\d{2}-\d{4}$/.test(date)*/) {
         return "❌ Please enter a valid date in DD-MM-YYYY format.";
       }
 
@@ -326,7 +326,7 @@ export const handleUserQuestion = async (userPrompt, userId) => {
       }
 
       const time = await extractFieldFromPrompt("time", userPrompt);
-      if (!time || !/^([0-1]\d|2[0-3]):([0-5]\d)$/.test(time)) {
+      if (!time /*|| !/^([0-1]\d|2[0-3]):([0-5]\d)$/.test(time)*/) {
         return "❌ Please enter a valid time in HH:MM format (between 11:00 and 17:00).";
       }
 
