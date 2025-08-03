@@ -512,7 +512,7 @@ export const handleUserQuestion = async (userPrompt, userId) => {
 **Date**: ${meetingState.date}
 **Time**: ${meetingState.time}
 
-A Google Calendar invite has been sent to your email. Let us know if you'd like to reschedule.`;
+Thank you! The time has been reserved in our calendar. Let us know if you'd like to reschedule.`;
 
         await deleteState(userId);
         return summary;
