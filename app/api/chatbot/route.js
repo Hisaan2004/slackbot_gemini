@@ -474,12 +474,24 @@ export const handleUserQuestion = async (userPrompt, userId) => {
         );
 
         // Add the event to Google Calendar
+        /*await createGoogleMeetEvent({
+            name: meetingState.name,
+            email: meetingState.email,
+            date: meetingState.date,
+            time: meetingState.time,
+        });*/
+        try {
         await createGoogleMeetEvent({
             name: meetingState.name,
             email: meetingState.email,
             date: meetingState.date,
             time: meetingState.time,
         });
+    } catch (calendarError) {
+        console.error("Could not create calendar event, but data is saved in DB.", calendarError);
+        // You could add logic here to notify an admin if the calendar event fails
+    }
+
 
         const summary = `✅ Meeting Scheduled!
 
