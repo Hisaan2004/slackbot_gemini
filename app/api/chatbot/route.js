@@ -189,6 +189,7 @@ import { searchRelevantQA } from "@/lib/embedding/fetchQueryEmbedding.js";
 import { checkAvailability, addToDB } from '@/lib/checkAvailability/index.js';
 import CHATBOT_PROPMPT from "@/lib/chatbot/Prompt.js";
 import { createGoogleMeetEvent } from '@/lib/googleMeetHelper/createMeet.js';
+import {isFutureDateTime} from "@/lib/dateHelper/pastDateTime.js";
 
 const defaultState = {
   step: null,
@@ -328,6 +329,10 @@ export const handleUserQuestion = async (userPrompt, userId) => {
       const time = await extractFieldFromPrompt("time", userPrompt);
       if (!time /*|| !/^([0-1]\d|2[0-3]):([0-5]\d)$/.test(time)*/) {
         return "❌ Please enter a valid time in HH:MM format (between 11:00 and 17:00).";
+      }
+      if (!isFutureDateTime(meetingState.date, time)) {
+        meetingState.step = "date";
+        return "❌ You cannot schedule a meeting in the past. Please enter date again in format DD-MM-YYYY.";
       }
 
       meetingState.time = time;
