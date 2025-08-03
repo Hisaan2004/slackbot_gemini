@@ -561,6 +561,8 @@ export const handleUserQuestion = async (userPrompt, userId) => {
 
       if (!isFutureDateTime(meetingState.date, time)) {
         meetingState.step = "date"; // restart from date
+          meetingState.time = null;  // ✅ FIX: clear old invalid time
+  await redis.set(`meetingState:${userId}`, meetingState);
         return "❌ You can't choose a past date/time. Please enter a new date (DD-MM-YYYY).";
       }
 
