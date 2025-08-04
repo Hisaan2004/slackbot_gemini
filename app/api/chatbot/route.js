@@ -6,7 +6,7 @@ import { checkAvailability, addToDB } from '@/lib/checkAvailability/index.js';
 import CHATBOT_PROPMPT from "@/lib/chatbot/Prompt.js";
 import { createGoogleMeetEvent } from '@/lib/googleMeetHelper/createMeet.js';
 import { isvalidateDateTime } from "@/lib/dateHelper/pastDateTime.js";
-import CHECKINFOPROMPT from "@/lib/chatbot/Prompt.js";
+import {CHECKINFOPROMPT} from "@/lib/chatbot/Prompt.js";
 
 const defaultState = {
   step: null,
