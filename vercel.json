@@ -1,7 +1,7 @@
 {
   "cron": [
     {
-      "path": "/api/cron/delete-meetings",
+      "path": "/api/cron/deletePastMeeting",
       "schedule": "30 10 * * *"
     }
   ]
