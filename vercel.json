@@ -1,5 +1,5 @@
 {
-  "cron": [
+  "crons": [
     {
       "path": "/api/cron/deletePastMeeting",
       "schedule": "30 10 * * *"
