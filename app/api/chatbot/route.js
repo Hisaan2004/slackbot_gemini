@@ -423,7 +423,7 @@ import { searchRelevantQA } from "@/lib/embedding/fetchQueryEmbedding.js";
 import { checkAvailability, addToDB } from '@/lib/checkAvailability/index.js';
 import CHATBOT_PROPMPT from "@/lib/chatbot/Prompt.js";
 import { createGoogleMeetEvent } from '@/lib/googleMeetHelper/createMeet.js';
-import { isFutureDateTime } from "@/lib/dateHelper/pastDateTime.js";
+import { /*isFutureDateTime,*/isvalidateDateTime } from "@/lib/dateHelper/pastDateTime.js";
 
 const defaultState = {
   step: null,
@@ -559,12 +559,18 @@ export const handleUserQuestion = async (userPrompt, userId) => {
         return "❌ Invalid time. Please enter in HH:MM (24h).";
       }
 
-      if (!isFutureDateTime(meetingState.date, time)) {
+      /*if (!isFutureDateTime(meetingState.date, time)) {
         meetingState.step = "date"; // restart from date
           meetingState.time = null;  // ✅ FIX: clear old invalid time
   await redis.set(`meetingState:${userId}`, meetingState);
         return "❌ You can't choose a past date/time. Please enter a new date (DD-MM-YYYY).";
-      }
+      }*/
+     if (!isvalidateDateTime(meetingState.date, time)) {
+      meetingState.step = "date"; // restart from date
+      meetingState.time = null;
+      await redis.set(`meetingState:${userId}`, meetingState);
+      return "❌ Invalid time. Please select a **weekday** between **11:00 AM and 5:00 PM (PKT)**.";
+    }
 
       meetingState.time = time;
 
