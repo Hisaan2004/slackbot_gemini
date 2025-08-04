@@ -448,8 +448,8 @@ const extractFieldFromPrompt = async (field, userPrompt) => {
 Extract only the "${field}" from this message:
 "${userPrompt}"
 
-If it's a date, return in format DD-MM-YYYY.
-If it's time, return in HH:MM (24h).
+If it's a date, return in format DD-MM-YYYY and make sure the date is not satuday or sunday.
+If it's time, return in HH:MM (24h) and make sure the time is from 11am to 5pm.
 If it's invalid or unclear, return only "null".
 No explanation, just the value.
 `.trim();
