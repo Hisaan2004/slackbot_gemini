@@ -192,7 +192,7 @@ Thank you! Your meeting is scheduled. Let us know if you'd like to reschedule.`;
       .join("\n\n");
 
     const finalPrompt = CHATBOT_PROPMPT(context, userPrompt);
-    const model = google("models/gemini-1.5-flash-latest");
+    const model = google("models/gemini-2.5-flash");
 
     const maxRetries = 2;
     let result;
